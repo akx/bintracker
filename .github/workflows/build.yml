@@ -1,0 +1,56 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/chicken-install
+        key: chicken-install-macos-${{ hashFiles('dependencies.txt') }}
+    - name: Install dependencies
+      run: brew install chicken sqlite3 tcl-tk
+    - name: Install Chicken dependencies
+      run: chicken-install -v -from-list dependencies.txt
+      env: 
+        CHICKEN_C_LIBRARY_PATH: /usr/local/opt/sqlite/lib
+        CHICKEN_C_INCLUDE_PATH: /usr/local/opt/sqlite/include
+    - name: Build
+      run: |
+        mkdir -p build
+        cd build
+        make -j3
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-macos
+        path: build
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/chicken-install
+        key: chicken-install-ubuntu-${{ hashFiles('dependencies.txt') }}
+    - name: Install dependencies
+      run: sudo apt-get install -y chicken-bin libsqlite3-dev tcl
+    - name: Install Chicken dependencies
+      run: chicken-install -s -v -from-list dependencies.txt
+    - name: Build
+      run: |
+        mkdir -p build
+        cd build
+        make -j3
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-linux
+        path: build
